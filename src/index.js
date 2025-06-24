@@ -245,10 +245,178 @@ app.post('/users', async (req, res) => {
 });
 
 // update a user's password or email
+app.patch('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, password } = req.body;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID provided'
+      });
+    }
+
+    if (!email && !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one field (email or password) must be provided'
+      });
+    }
+    const updateData = {};
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid email format'
+        });
+      }
+
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user')
+        .select('id')
+        .eq('email', email)
+        .neq('id', id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing email:', checkError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to check existing email',
+          error: checkError.message
+        });
+      }
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email already exists for another user'
+        });
+      }
+      updateData.email = email;
+    }
+
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long'
+        });
+      }
+      updateData.password = password;
+    }
+
+    const { data, error } = await supabase
+      .from('user')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      console.error('Error updating user:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update user',
+        error: error.message
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: data
+    });
+
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
+    });
+  }
+});
 
 
-// create a user with email and default password
 // delete a user
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID provided'
+      });
+    }
+
+    const { data: existingUser, error: checkError } = await supabase
+      .from('user')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (checkError) {
+      if (checkError.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      console.error('Error checking user existence:', checkError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check user existence',
+        error: checkError.message
+      });
+    }
+
+    const { error } = await supabase
+      .from('user')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting user:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete user',
+        error: error.message
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
+      data: {
+        deletedUser: existingUser
+      }
+    });
+
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
+    });
+  }
+});
+
+
 // login a user
 // logout a user
 
