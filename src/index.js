@@ -212,12 +212,15 @@ app.post('/users', async (req, res) => {
       });
     }
 
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const { data, error } = await supabase
       .from('user')
       .insert([
         {
           email: email,
-          password: password
+          password: hashedPassword
         }
       ])
       .select()
@@ -508,8 +511,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
-// logout a user
 
 const PORT = process.env.PORT || 3001;
 
