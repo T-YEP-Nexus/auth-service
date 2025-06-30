@@ -10,6 +10,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const bcrypt = require('bcrypt');
 
+const jwt = require('jsonwebtoken');
+
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase configuration in .env');
   process.exit(1);
@@ -470,14 +472,23 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // successful login - return user data without password
     const { password: userPassword, ...userWithoutPassword } = user;
+    
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        email: user.email 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
       data: {
         user: userWithoutPassword,
+        token: token,
         loginTime: new Date().toISOString()
       }
     });
