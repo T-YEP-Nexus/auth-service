@@ -81,7 +81,7 @@ app.get('/users/:id', async (req, res) => {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === 'PGRST116' || data === null) {
         return res.status(404).json({
           success: false,
           message: 'User not found'
@@ -511,3 +511,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}`);
 });
+
+module.exports = app;
