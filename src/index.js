@@ -8,6 +8,8 @@ const app = express();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const bcrypt = require('bcrypt');
+
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase configuration in .env');
   process.exit(1);
@@ -418,6 +420,79 @@ app.delete('/users/:id', async (req, res) => {
 
 
 // login a user
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    const { data: user, error } = await supabase
+      .from('user')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password'
+        });
+      }
+
+      console.error('Error finding user:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Login failed',
+        error: error.message
+      });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // successful login - return user data without password
+    const { password: userPassword, ...userWithoutPassword } = user;
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: userWithoutPassword,
+        loginTime: new Date().toISOString()
+      }
+    });
+
+  } catch (err) {
+    console.error('Unexpected error during login:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
+    });
+  }
+});
+
+
 // logout a user
 
 const PORT = process.env.PORT || 3001;
