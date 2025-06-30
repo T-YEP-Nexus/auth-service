@@ -212,12 +212,15 @@ app.post('/users', async (req, res) => {
       });
     }
 
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const { data, error } = await supabase
       .from('user')
       .insert([
         {
           email: email,
-          password: password
+          password: hashedPassword
         }
       ])
       .select()
@@ -268,7 +271,9 @@ app.patch('/users/:id', async (req, res) => {
         message: 'At least one field (email or password) must be provided'
       });
     }
+
     const updateData = {};
+
     if (email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
@@ -300,6 +305,7 @@ app.patch('/users/:id', async (req, res) => {
           message: 'Email already exists for another user'
         });
       }
+
       updateData.email = email;
     }
 
@@ -310,7 +316,10 @@ app.patch('/users/:id', async (req, res) => {
           message: 'Password must be at least 6 characters long'
         });
       }
-      updateData.password = password;
+
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      updateData.password = hashedPassword;
     }
 
     const { data, error } = await supabase
@@ -351,7 +360,6 @@ app.patch('/users/:id', async (req, res) => {
     });
   }
 });
-
 
 // delete a user
 app.delete('/users/:id', async (req, res) => {
@@ -503,8 +511,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
-// logout a user
 
 const PORT = process.env.PORT || 3001;
 
