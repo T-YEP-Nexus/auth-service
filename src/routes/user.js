@@ -492,4 +492,75 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// logout a user
+router.post('/logout', async (req, res) => {
+  try {
+    // Récupérer le token depuis l'header Authorization
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const token = authHeader.substring(7); // Enlever "Bearer "
+
+    // Vérifier si le token est valide
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Optionnel : Vérifier que l'utilisateur existe encore
+      const { data: user, error } = await supabase
+        .from('user')
+        .select('id, email')
+        .eq('id', decoded.userId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (error) {
+        console.error('Error verifying user during logout:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Logout failed',
+          error: error.message
+        });
+      }
+
+      // Logout réussi
+      res.status(200).json({
+        success: true,
+        message: 'Logout successful',
+        data: {
+          userId: decoded.userId,
+          email: decoded.email,
+          logoutTime: new Date().toISOString()
+        }
+      });
+
+    } catch (jwtError) {
+      // Token invalide ou expiré
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+
+  } catch (err) {
+    console.error('Unexpected error during logout:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;
