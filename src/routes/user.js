@@ -7,8 +7,24 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // crud routes for the 'user' table
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: User management and authentication
+ */
 
 // get all users
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: List of all users
+ */
 router.get('/users', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -42,6 +58,29 @@ router.get('/users', async (req, res) => {
 });
 
 // get a user by id
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: User UUID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -94,6 +133,29 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // get a user by email
+/**
+ * @swagger
+ * /users/email/{email}:
+ *   get:
+ *     summary: Get user by email
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: email
+ *         required: true
+ *         description: Email address
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *       400:
+ *         description: Invalid email
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/users/email/:email', async (req, res) => {
   try {
     const { email } = req.params;
@@ -145,6 +207,36 @@ router.get('/users/email/:email', async (req, res) => {
 });
 
 // create a user with email and password
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User created
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already exists
+ *       500:
+ *         description: Server error
+ */
 router.post('/users', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -233,6 +325,42 @@ router.post('/users', async (req, res) => {
 });
 
 // update a user's password or email
+/**
+ * @swagger
+ * /users/{id}:
+ *   patch:
+ *     summary: Update a user's email or password
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: User UUID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: User not found
+ *       409:
+ *         description: Email already exists
+ *       500:
+ *         description: Server error
+ */
 router.patch('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -343,6 +471,29 @@ router.patch('/users/:id', async (req, res) => {
 });
 
 // delete a user
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: User UUID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 router.delete('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -409,8 +560,37 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
-
 // login a user
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Log in a user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: Missing credentials
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Server error
+ */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -493,6 +673,22 @@ router.post('/login', async (req, res) => {
 });
 
 // logout a user
+/**
+ * @swagger
+ * /logout:
+ *   post:
+ *     summary: Log out a user (token-based)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Unauthorized or invalid token
+ *       500:
+ *         description: Server error
+ */
 router.post('/logout', async (req, res) => {
   try {
     // Récupérer le token depuis l'header Authorization
