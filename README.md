@@ -105,8 +105,7 @@ Explorez l'API de manière interactive :
 npm test
 
 # Tests spécifiques
-npm test __tests__/projectRoutes.tests.js
-npm test __tests__/projectStudentsRoutes.tests.js
+npm test __tests__/projectAuth.tests.js
 
 # Tests avec coverage
 npm run test:coverage
@@ -138,7 +137,7 @@ volumes:
 
 ---
 
-**📋 Projects Service** - *Part of Nexus Ecosystem*  
+**✍️ Auth Service** - *Part of Nexus Ecosystem*  
 
 🔗 **[Retour au projet principal](https://github.com/T-YEP-Nexus/frontend)**
 
