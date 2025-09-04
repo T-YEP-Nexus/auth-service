@@ -4,6 +4,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
+const auth = require("./middleware/auth");
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.use(cookieParser());
 
 const userRoute = require("./routes/user/user.js");
 const userLoginRoute = require("./routes/user/login/login.js");
+
+// Protéger toutes les routes (sauf /login et /api-docs) via middleware d'auth
+app.use(auth);
 
 app.use("", userRoute);
 app.use("", userLoginRoute);
