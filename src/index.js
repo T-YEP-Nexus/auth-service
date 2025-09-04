@@ -11,8 +11,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const userRoute = require('./routes/user.js');
+const userRoute = require('./routes/user/user.js');
+const userLoginRoute = require('./routes/user/login/login.js');
+
 app.use('', userRoute);
+app.use('', userLoginRoute);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
