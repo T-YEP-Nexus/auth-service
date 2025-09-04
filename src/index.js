@@ -1,23 +1,28 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./swagger');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swagger");
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000'
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
-const userRoute = require('./routes/user/user.js');
-const userLoginRoute = require('./routes/user/login/login.js');
+const userRoute = require("./routes/user/user.js");
+const userLoginRoute = require("./routes/user/login/login.js");
 
-app.use('', userRoute);
-app.use('', userLoginRoute);
+app.use("", userRoute);
+app.use("", userLoginRoute);
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
