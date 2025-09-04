@@ -1,10 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const supabase = require('../../../../config/supabaseClient.js');
+const supabase = require("../../../../config/supabaseClient.js");
 
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 /**
  * @swagger
@@ -44,14 +44,14 @@ const jwt = require('jsonwebtoken');
  *       500:
  *         description: Server error
  */
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: "Email and password are required",
       });
     }
 
@@ -59,68 +59,84 @@ router.post('/login', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email format'
+        message: "Invalid email format",
       });
     }
 
     const { data: user, error } = await supabase
-      .from('user')
-      .select('*')
-      .eq('email', email)
+      .from("user")
+      .select("*")
+      .eq("email", email)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password'
+          message: "Invalid email or password",
         });
       }
 
-      console.error('Error finding user:', error);
+      console.error("Error finding user:", error);
       return res.status(500).json({
         success: false,
-        message: 'Login failed',
-        error: error.message
+        message: "Login failed",
+        error: error.message,
       });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
-    
+
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
     const { password: userPassword, ...userWithoutPassword } = user;
-    
+
+    // Récupérer le rôle de l'utilisateur depuis user-profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user-profile")
+      .select("roles_user")
+      .eq("id_user", user.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      console.error("Error finding user profile:", profileError);
+      return res.status(500).json({
+        success: false,
+        message: "Login failed: user profile not found",
+        error: profileError?.message,
+      });
+    }
+
     const token = jwt.sign(
-      { 
+      {
         userId: user.id,
-        email: user.email 
+        email: user.email,
+        role: userProfile.roles_user,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: "24h" }
     );
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         user: userWithoutPassword,
         token: token,
-        loginTime: new Date().toISOString()
-      }
+        loginTime: new Date().toISOString(),
+      },
     });
-
   } catch (err) {
-    console.error('Unexpected error during login:', err);
+    console.error("Unexpected error during login:", err);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: err.message
+      message: "Internal server error",
+      error: err.message,
     });
   }
 });
@@ -142,15 +158,15 @@ router.post('/login', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/logout', async (req, res) => {
+router.post("/logout", async (req, res) => {
   try {
     // Récupérer le token depuis l'header Authorization
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided'
+        message: "No token provided",
       });
     }
 
@@ -159,55 +175,53 @@ router.post('/logout', async (req, res) => {
     // Vérifier si le token est valide
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Optionnel : Vérifier que l'utilisateur existe encore
       const { data: user, error } = await supabase
-        .from('user')
-        .select('id, email')
-        .eq('id', decoded.userId)
+        .from("user")
+        .select("id, email")
+        .eq("id", decoded.userId)
         .single();
 
-      if (error && error.code === 'PGRST116') {
+      if (error && error.code === "PGRST116") {
         return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
       if (error) {
-        console.error('Error verifying user during logout:', error);
+        console.error("Error verifying user during logout:", error);
         return res.status(500).json({
           success: false,
-          message: 'Logout failed',
-          error: error.message
+          message: "Logout failed",
+          error: error.message,
         });
       }
 
       // Logout réussi
       res.status(200).json({
         success: true,
-        message: 'Logout successful',
+        message: "Logout successful",
         data: {
           userId: decoded.userId,
           email: decoded.email,
-          logoutTime: new Date().toISOString()
-        }
+          logoutTime: new Date().toISOString(),
+        },
       });
-
     } catch (jwtError) {
       // Token invalide ou expiré
       return res.status(401).json({
         success: false,
-        message: 'Invalid or expired token'
+        message: "Invalid or expired token",
       });
     }
-
   } catch (err) {
-    console.error('Unexpected error during logout:', err);
+    console.error("Unexpected error during logout:", err);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: err.message
+      message: "Internal server error",
+      error: err.message,
     });
   }
 });
